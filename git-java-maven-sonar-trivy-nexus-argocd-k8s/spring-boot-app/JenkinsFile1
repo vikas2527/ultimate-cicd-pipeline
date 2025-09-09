@@ -6,9 +6,9 @@ pipeline {
   }
 
   environment {
-    DOCKER_IMAGE = "vikas115/ultimate-cicd:${BUILD_NUMBER}"
+    DOCKER_IMAGE = "vikas115/Java-cicd:${BUILD_NUMBER}"
     REGISTRY_CREDENTIALS = credentials('docker-cred')
-    GIT_REPO_NAME = "Java-Jenkins-Pipeline"
+    GIT_REPO_NAME = "ultimate-cicd-pipeline"
     GIT_USER_NAME = "vikas2527"
   }
 
@@ -16,13 +16,13 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        git branch: 'main', url: 'https://github.com/vikas2527/Java-Jenkins-Pipeline.git'
+        git branch: 'main', url: 'https://github.com/vikas2527/ultimate-cicd-pipeline.git'
       }
     }
 
     stage('Maven Compile') {
       steps {
-        dir('git-java-maven-sonar-argocd-k8s/spring-boot-app') {
+        dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
           sh 'mvn compile'
         }
       }
@@ -30,7 +30,7 @@ pipeline {
 
     stage('Maven Test') {
       steps {
-        dir('git-java-maven-sonar-argocd-k8s/spring-boot-app') {
+        dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
           sh 'mvn test'
         }
       }
@@ -39,7 +39,7 @@ pipeline {
     stage('SonarQube Analysis') {
       steps {
         withSonarQubeEnv('SonarQubeServer') {
-          dir('git-java-maven-sonar-argocd-k8s/spring-boot-app') {
+          dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
             sh 'mvn sonar:sonar'
           }
         }
@@ -48,7 +48,7 @@ pipeline {
 
     stage('Maven Package') {
       steps {
-        dir('git-java-maven-sonar-argocd-k8s/spring-boot-app') {
+        dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
           sh 'mvn package'
         }
       }
@@ -56,7 +56,7 @@ pipeline {
 
     stage('Upload Artifact to Nexus') {
       steps {
-        dir('git-java-maven-sonar-argocd-k8s/spring-boot-app') {
+        dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
           sh 'mvn deploy'
         }
       }
@@ -65,7 +65,7 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         script {
-          sh 'cd git-java-maven-sonar-argocd-k8s/spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
+          sh 'cd git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
         }
       }
     }
