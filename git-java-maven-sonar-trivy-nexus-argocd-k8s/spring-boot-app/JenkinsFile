@@ -6,7 +6,7 @@ pipeline {
   }
 
   environment {
-    DOCKER_IMAGE = "vikas115/Java-cicd:${BUILD_NUMBER}"
+    DOCKER_IMAGE = "vikas115/java-cicd:${BUILD_NUMBER}"
     REGISTRY_CREDENTIALS = credentials('docker-cred')
     GIT_REPO_NAME = "ultimate-cicd-pipeline"
     GIT_USER_NAME = "vikas2527"
