@@ -54,13 +54,16 @@ pipeline {
       }
     }
 
-    stage('Upload Artifact to Nexus') {
-      steps {
-        dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
-          sh 'mvn deploy'
-        }
+   stage('Upload Artifact to Nexus') {
+  steps {
+    // Use Managed File for Maven global settings
+    configFileProvider([configFile(fileId: 'global-settings', variable: 'GLOBAL_SETTINGS')]) {
+      dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
+        sh "mvn deploy -s $GLOBAL_SETTINGS"
       }
     }
+  }
+}
 
     stage('Build Docker Image') {
       steps {
