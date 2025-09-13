@@ -2,58 +2,125 @@ pipeline {
   agent any
 
   tools {
-        // Use the Maven installation configured in Jenkins (Global Tool Config)
-        maven 'maven-local'
+    maven 'maven-local'   // configure in Jenkins Global Tool Config
+  }
+
+  environment {
+    DOCKER_IMAGE = "vikas115/Java-cicd:${BUILD_NUMBER}"
+    REGISTRY_CREDENTIALS = credentials('docker-cred')
+    GIT_REPO_NAME = "ultimate-cicd-pipeline"
+    GIT_USER_NAME = "vikas2527"
   }
 
   stages {
+
     stage('Checkout') {
       steps {
-        sh 'echo passed'
-        //git branch: 'main', url: 'https://github.com/vikas2527/Java-Jenkins-Pipeline.git'
+        git branch: 'main', url: 'https://github.com/vikas2527/ultimate-cicd-pipeline.git'
       }
     }
-    stage('Build and Test') {
-            steps {
-                sh 'ls -ltr'
-                dir('git-java-maven-sonar-argocd-k8s/spring-boot-app') {
-                    sh 'mvn clean package'
-                }
-            }
+
+    stage('Maven Compile') {
+      steps {
+        dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
+          sh 'mvn compile'
+        }
       }
-    stage('Build and Push Docker Image') {
-      environment {
-        DOCKER_IMAGE = "vikas115/ultimate-cicd:${BUILD_NUMBER}"
-        REGISTRY_CREDENTIALS = credentials('docker-cred')
+    }
+
+    stage('Maven Test') {
+      steps {
+        dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
+          sh 'mvn test'
+        }
       }
+    }
+
+    stage('SonarQube Analysis') {
+      steps {
+        withSonarQubeEnv('SonarQubeServer') {
+          dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
+            sh 'mvn sonar:sonar'
+          }
+        }
+      }
+    }
+
+    stage('Maven Package') {
+      steps {
+        dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
+          sh 'mvn package'
+        }
+      }
+    }
+
+    stage('Upload Artifact to Nexus') {
+      steps {
+        dir('git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app') {
+          sh 'mvn deploy'
+        }
+      }
+    }
+
+    stage('Build Docker Image') {
       steps {
         script {
-            sh 'cd git-java-maven-sonar-argocd-k8s/spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
-            def dockerImage = docker.image("${DOCKER_IMAGE}")
-            docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
-                dockerImage.push()
-            }
+          sh 'cd git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
         }
       }
     }
+
+    stage('Trivy Scan') {
+      steps {
+        sh "trivy image --exit-code 0 --severity HIGH,CRITICAL ${DOCKER_IMAGE}"
+      }
+    }
+
+    stage('Push Docker Image') {
+      steps {
+        script {
+          def dockerImage = docker.image("${DOCKER_IMAGE}")
+          docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
+            dockerImage.push()
+          }
+        }
+      }
+    }
+
     stage('Update Deployment File') {
-        environment {
-            GIT_REPO_NAME = "Java-Jenkins-Pipeline"
-            GIT_USER_NAME = "vikas2527"
+      steps {
+        withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+          sh '''
+            git config user.email "vikas9878@gmail.com"
+            git config user.name "vikas2527"
+            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app-manifests/deployment.yml
+            git add git-java-maven-sonar-trivy-nexus-argocd-k8s/spring-boot-app-manifests/deployment.yml
+            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+          '''
         }
-        steps {
-            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-                sh '''
-                    git config user.email "vikas9878@gmail.com"
-                    git config user.name "vikas2527"
-                    BUILD_NUMBER=${BUILD_NUMBER}
-                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" git-java-maven-sonar-argocd-k8s/spring-boot-app-manifests/deployment.yml
-                    git add git-java-maven-sonar-argocd-k8s/spring-boot-app-manifests/deployment.yml
-                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-                '''
-            }
-        }
+      }
+    }
+  }
+
+  post {
+    success {
+      mail bcc: '',
+           body: "✅ Build #${BUILD_NUMBER} succeeded.\n\nDocker Image: ${DOCKER_IMAGE}\nBranch: ${GIT_BRANCH}",
+           cc: '',
+           from: 'jenkins@cicd.com',
+           replyTo: 'jenkins@cicd.com',
+           subject: "Jenkins Pipeline Success - Build #${BUILD_NUMBER}",
+           to: 'vikas9878@gmail.com'
+    }
+    failure {
+      mail bcc: '',
+           body: "❌ Build #${BUILD_NUMBER} failed.\n\nCheck Jenkins logs for details.",
+           cc: '',
+           from: 'jenkins@cicd.com',
+           replyTo: 'jenkins@cicd.com',
+           subject: "Jenkins Pipeline Failed - Build #${BUILD_NUMBER}",
+           to: 'vikas9878@gmail.com'
     }
   }
 }
