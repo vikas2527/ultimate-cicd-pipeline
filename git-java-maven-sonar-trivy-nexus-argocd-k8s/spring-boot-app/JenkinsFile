@@ -114,7 +114,7 @@ pipeline {
            from: 'jenkins@cicd.com',
            replyTo: 'jenkins@cicd.com',
            subject: "Jenkins Pipeline Success - Build #${BUILD_NUMBER}",
-           to: 'vikas9878@gmail.com'
+           to: 'skvikas51@gmail.com'
     }
     failure {
       mail bcc: '',
@@ -123,7 +123,7 @@ pipeline {
            from: 'jenkins@cicd.com',
            replyTo: 'jenkins@cicd.com',
            subject: "Jenkins Pipeline Failed - Build #${BUILD_NUMBER}",
-           to: 'vikas9878@gmail.com'
+           to: 'skvikas51@gmail.com'
     }
   }
 }
