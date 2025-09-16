@@ -1,129 +1,132 @@
-🚀 Ultimate CI/CD Pipeline with Jenkins
+# 🚀 Ultimate CI/CD Pipeline  
 
-This repository demonstrates a complete CI/CD pipeline built using Jenkins and integrated with industry-standard DevOps tools. The pipeline automates the entire process — from code commit to deployment on Kubernetes — ensuring faster, reliable, and production-ready releases.
+This repository demonstrates a **Complete CI/CD Pipeline** using **Jenkins, Maven, SonarQube, Nexus, Docker, Trivy, ArgoCD, and Kubernetes**.  
 
-🛠️ Tools & Technologies Used
+The pipeline automates:  
+- Source code checkout from GitHub  
+- Build & test with Maven  
+- Static code analysis with SonarQube  
+- Artifact upload to Nexus  
+- Docker image build & security scan with Trivy  
+- Docker image push to DockerHub  
+- Deployment manifest update & push back to GitHub (GitOps)  
+- Notifications on pipeline success/failure  
 
-   Jenkins – CI/CD orchestration
-   Maven – Build & dependency management
-   SonarQube – Static code analysis & quality gates
-   Nexus – Artifact repository (optional)
-   Docker – Containerization of applications
-   Docker Hub – Image registry
-   ArgoCD – GitOps-based deployment
-   Kubernetes – Container orchestration platform
-   GitHub – Source code management
+---
 
-🔄 Pipeline Workflow
-   Checkout Code – Jenkins fetches code from GitHub
-   Build & Test – Maven compiles and runs tests
-   Code Quality Check – SonarQube analysis ensures code meets quality standards
-   Package & Push Artifact – Artifact is stored in Nexus (optional)
-   Build Docker Image – Application is containerized
-   Push Image to DockerHub – Versioned image is pushed to Docker registry
-   Update Deployment Manifest – Jenkins updates Kubernetes manifests with the new image tag
-   ArgoCD Sync – ArgoCD detects manifest changes and deploys automatically to Kubernetes
+## 🛠️ Pipeline Stages  
 
-📂 Repository Structure
-.
-├── spring-boot-app/                 # Sample Java Spring Boot application
-│   ├── src/                         # Source code
-│   ├── pom.xml                      # Maven build file
-│   └── Dockerfile                   # Docker image build
-├── spring-boot-app-manifests/       # Kubernetes deployment manifests
-│   └── deployment.yml
-├── Jenkinsfile                      # Jenkins pipeline script
-└── README.md                        # Project documentation
+1. **Checkout**  
+   - Clones the repository from GitHub.  
 
-Prerequisites:
+2. **Maven Compile & Test**  
+   - Compiles Java source code and runs unit tests.  
 
-   -  Java application code hosted on a Git repository
-   -  Jenkins server with Maven and Docker 
-   -  Sonarqube Server
-   -  Trivy Server
-   -  Nexus Server
-   -  Kubernetes cluster
-   -  Helm package manager
-   -  Argo CD
+3. **SonarQube Analysis**  
+   - Runs static code quality analysis using configured SonarQube server.  
 
+4. **Maven Package**  
+   - Packages the Spring Boot application into a JAR.  
 
-🔹 Pipeline Stages & Their Meaning
-1. Checkout
+5. **Upload Artifact to Nexus**  
+   - Deploys the packaged JAR to a Nexus repository.  
 
-What happens: Jenkins pulls the source code from GitHub (ultimate-cicd-pipeline repo).
+6. **Build Docker Image**  
+   - Builds Docker image for the application:   
 
-Why: Always start with fresh, latest code from version control.
+7. **Trivy Scan**  
+   - Scans the Docker image for vulnerabilities and generates an HTML report.  
 
-2. Maven Compile
+8. **Push Docker Image**  
+   - Pushes the Docker image to **DockerHub**.  
 
-What happens: Runs mvn compile on the Spring Boot app.
+9. **Update Deployment File**  
+   - Updates the Kubernetes deployment manifest with the latest image tag.  
+   - Commits & pushes changes back to GitHub (GitOps approach for ArgoCD).  
 
-Why: Compiles Java source code into .class files, ensuring there are no syntax errors.
+10. **Post Actions**  
+    - Sends email notification on **success** or **failure** of the pipeline.  
 
-3. Maven Test
+---
 
-What happens: Executes mvn test.
+## ⚙️ Jenkins Configuration  
 
-Why: Runs unit tests (JUnit/TestNG) to validate business logic. If tests fail, pipeline stops.
+- **Tools**:  
+  - Maven (configured as `maven-local` in Jenkins Global Tool Config)  
 
-4. SonarQube Analysis
+- **Credentials**:  
+  - `docker-cred` → DockerHub credentials  
+  - `github` → GitHub Personal Access Token (with repo access)  
+  - `global-settings` → Managed Maven settings.xml for Nexus  
 
-What happens: Runs mvn sonar:sonar with SonarQube server.
+- **SonarQube**:  
+  - Configure in Jenkins as `SonarQubeServer`  
 
-Why: Performs static code analysis → checks for code smells, bugs, vulnerabilities, and bad practices.
+---
 
-5. Quality Gate (added fix)
+## 📂 Project Structure  
 
-What happens: Jenkins waits for SonarQube’s Quality Gate status.
+```
+ultimate-cicd-pipeline/
+│
+├── git-java-maven-sonar-trivy-nexus-argocd-k8s/
+│   ├── spring-boot-app/              # Source code
+│   └── spring-boot-app-manifests/    # Kubernetes manifests
+│
+├── Jenkinsfile                       # CI/CD pipeline definition
+└── README.md                         # Project documentation
+```
 
-Why: If the project doesn’t meet quality standards, pipeline fails before going further.
+---
 
-6. Maven Package
+## 🚦 Running the Pipeline  
 
-What happens: Runs mvn package.
+1. Configure Jenkins with required tools and credentials.  
+2. Create a new pipeline job pointing to this GitHub repo.  
+3. Trigger the pipeline — it will:  
+   - Build, test, scan, push Docker image  
+   - Update Kubernetes manifests  
+   - Notify via email  
 
-Why: Packages the app into a deployable artifact (like .jar file for Spring Boot).
+---
 
-7. Upload Artifact to Nexus
+## 📊 Reports  
 
-What happens: Runs mvn deploy to push the artifact to Nexus repository.
+- **Trivy Scan Report** → `trivy-image-report.html`  
+- **SonarQube Reports** → Available on SonarQube Dashboard  
 
-Why: Stores the build artifacts in a central repository → versioning + reusability.
+---
 
-8. Build Docker Image
+## 📬 Notifications  
 
-What happens: Builds a Docker image with the compiled .jar and tags it (vikas115/java-cicd:<build number>).
+- On success → email sent with build number & Docker image details.  
+- On failure → email sent with error details & link to Jenkins logs.  
 
-Why: Containerizes the application for deployment across environments.
+---
 
-9. Trivy Scan
+## 🖼️ CI/CD Workflow  
 
-What happens: Scans the Docker image for vulnerabilities in OS packages & libraries.
+```mermaid
+flowchart TD
+    A[Checkout Code] --> B[Maven Compile & Test]
+    B --> C[SonarQube Analysis]
+    C --> D[Maven Package]
+    D --> E[Nexus Upload]
+    E --> F[Build Docker Image]
+    F --> G[Trivy Scan]
+    G --> H[Push to DockerHub]
+    H --> I[Update K8s Deployment Manifest]
+    I --> J[ArgoCD Sync to Cluster]
+```
 
-Why: Ensures only secure images are deployed. Pipeline fails if HIGH/CRITICAL issues exist.
+---
 
-10. Push Docker Image
+## 🔑 Tech Stack  
 
-What happens: Pushes the Docker image to Docker Hub (vikas115/java-cicd).
-
-Why: Makes the image available for deployment in Kubernetes (via ArgoCD).
-
-11. Update Deployment File
-
-What happens: Updates Kubernetes deployment.yml with the new Docker image tag and pushes it back to GitHub.
-
-Why: This triggers GitOps flow with ArgoCD, which syncs manifests and updates the app in the cluster.
-
-🔹 Post Actions
-✅ On Success
-
-Sends a success email with build details (build number, Docker image, branch).
-
-❌ On Failure
-
-Sends a failure email with an alert to check logs.
-
-👤 Author
-Vikas Singh
-💼 DevOps Engineer | ⚙️ CI/CD & Cloud Enthusiast
-📧 vikas9878@gmail.com
+- **CI/CD**: Jenkins  
+- **Build Tool**: Maven  
+- **Code Quality**: SonarQube  
+- **Artifact Repository**: Nexus  
+- **Containerization**: Docker  
+- **Security**: Trivy  
+- **GitOps Deployment**: ArgoCD + Kubernetes
